@@ -5,7 +5,6 @@ import idle from './idle/idlesim.vue'
 
 <template>
   <n-layout position="absolute">
-
 <idle/>
 </n-layout>
 </template>

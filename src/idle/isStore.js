@@ -1,4 +1,5 @@
 import { defineStore } from "pinia"
+import {worldTemplates,entityTemplates} from './exp'
 export default defineStore("idlesim", {
     state: () => {
         return {
@@ -6,13 +7,19 @@ export default defineStore("idlesim", {
             entities: {},
             idleTime: 0,
             entityOnEdit:null,
+
+            worldTemplates: worldTemplates??[],
+            entityTemplates:entityTemplates??[],
+
+            maxEntityPerWorld:8,
+            maxEntity:64
         }
     },
     actions: {
         setWorld(name, value) {
             this.worlds[name] = value;
         },
-        getWorld(name) {
+        getWorld(id) {
             return this.worlds[name]
         },
         setEntity(name, value) {

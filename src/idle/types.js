@@ -1,45 +1,41 @@
-import uh from './uniquehex.js'
-let uhgene = uh();
+import {unique} from './util'
 export class World {
-    constructor(i) { Object.assign(this, i); }
-    name;//name是实例的名字
-    new(n) { 
+    constructor(i) { Object.assign(this, i); this.id=this.label;}
+    label;
+    id;
+    digest;
+    parody=null;//包
+    //params 生成时可用的参数 或许该叫customs
+    new(n) {
         let ret=Object.assign(Object.create(this),n);
         ret.entities=[];
-        ret.hash=uhgene()
+        ret.id=unique()
         return  ret;}
     receive(entity) {
         //在这里检查是否能添加entity
         this.entities.push(entity)
     }
     tick() {}
-
-    description="No description"
-    title = "Town.Hamlet";
-    id;
+    views = []
     entities = []
     bp = 0
 }
 export class Entity {
-    constructor(i) { Object.assign(this, i); }
-    title="John Doe has no title";
-    name="JohnDoe"
+    constructor(i) { Object.assign(this, i);this.id=this.label; }
+    label;
     id;
-    new() { let ret =Object.create(this); ret.hash = uhgene() ;return ret}
-    tick(wc, we) {
-        wc.bp += 1;
+    digest;
+    //parody=null;//包
+        //params 生成时可用的参数 或许该叫customs
+
+    new(n) {
+        let ret=Object.assign(Object.create(this),n);
+        ret.id=unique();
+        return  ret;}
+    tick(we, wc) {
         we.log("hell yeah")
-    }
-}
-export class Prop{
-    constructor(n){
-        Object.assign(this,n)
-    }
-    //关于如何解析
-    //最简单的是一个字符串，直接体现原obj的键值，没有默认值
-    //default;
-    //render(){};
-    //template"" 会被方块包裹。应该用{{}}插值？
-    //template 【】一系列条件对应的{{}}插值
-    //形式应该是 [[key,comm,value1,value2,template]]
+    };
+    interactions=[]
+    tags=[];
+    views=[]
 }

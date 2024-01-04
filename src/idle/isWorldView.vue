@@ -14,27 +14,26 @@ function stopTimer() {
     clearInterval(timer.value);
     timer.value = 0;
 }
-
-
 onMounted(startTimer)
 onUnmounted(stopTimer)
 let fold = ref(false)
 
-import { entityTemplates } from './exp';
-const newentityselection = ref(entityTemplates[0])
-const newentityname = ref('')
-function newEntity() {
-    let n = newentityselection.value.name;
-    let na = newentityname.value;
-    let ne;
-    for (let i of entityTemplates) {
-        if (i.name === n) {
-            ne = i.new({ name: na })
+const enttpl=computed(()=>store.entityTemplates.map(i=>{return {label:i.label,value:i.id??i.label}}))
+const neoption=ref()
+onMounted(()=>neoption.value=enttpl.value[0].value)
+const nelabel=ref("")
+function newEntity(name,from) {
+    if(Object.keys(store.entities).length>=store.maxEntity??256){return ;}
+    let nn = typeof name==="string"?name:nelabel.value;
+    let ni = from?.id??from??neoption.value;
+    let ner;
+    for (let i of store.entityTemplates) {
+        if (i.id === ni) {
+            ner = i.new({ label:nn!=""?nn:i.label})
         }
     }
-    curWorld.value.receive(ne);
-    store.setEntity(na, ne);
-    // console.log(curEntities.value,"in",curWorld.value)
+    curWorld.value.receive(ner);
+    store.setEntity(nn, ner);
 }
 function destructEntity(entity, world) {
     world.entities.splice(world.entities.indexOf(entity), 1);
@@ -49,42 +48,52 @@ function destructEntity(entity, world) {
 const emits = defineEmits(["destruct"])
 </script>
 <template>
-    <section class="worldarea">
+    <n-card class="worldarea" :title="curWorld?.name ?? curWorld?.label ?? ''">
+        <n-space justify="space-between">
+            <pre>{{ typeof curWorld?.description === "function" ? curWorld?.description() : curWorld.description }}</pre>
+            <n-tabs>
+                <n-tab-pane v-for="v in curWorld.views" :name="v">{{ v() }}</n-tab-pane>
+            </n-tabs>
+            <n-space justify="end">
+                <button @click="() => curWorld.tick()">single step</button>
+                <button @click="() => timer ? stopTimer() : startTimer()">
+                    {{ timer ? "stop" : "start" }}</button>
+                <button @click="fold = !fold"> fold</button><button @click="emits('destruct')">🗑️</button>
+            </n-space>
+        </n-space>
 
-        <h2>{{ curWorld?.name ?? curWorld?.title ?? "" }}</h2>
-        <pre>{{ typeof curWorld?.description === "function" ? curWorld?.description() : curWorld.description }}</pre>
+        <template #footer v-if="!fold">
+            <n-space justify="end">
+                <button @click="fold = !fold"> fold</button>
+            </n-space>
+        </template>
 
-        <button style="float:right" @click="() => curWorld.tick()">single step</button>
-        <button style="float:right" @click="() => timer ? stopTimer() : startTimer()">
-            {{ timer ? "stop" : "start" }}</button>
-        <button style="float:right" @click="fold = !fold"> fold</button>
         <br />
         <div v-show="!fold">
-            <select v-model="newentityselection">
-                <option v-for="et in entityTemplates" :value="et">{{ et.name }}</option>
-            </select>
-            <input type="text" v-model="newentityname">
+            <n-header>
+                todo:加入自定义
+                
+                <n-space >
+                    <n-select  :options="enttpl" style="flex-grow:2;max-width:20rem;min-width:8rem" v-model:value="neoption"></n-select>
+                    <n-input style="max-width:20rem" v-model:value="nelabel">nihao</n-input>
+                    <n-button @click="newEntity">NEW</n-button>
+                </n-space>
+            </n-header>
 
-            <button @click="newEntity">add Entity</button>
-
-            <button @click="emits('destruct')">🗑️</button>
-            <section class="entityarea">entityhash informations and tools here
-
+            <section class="entityarea">
                 <n-collapse hoverable clickable>
-                    <isev  v-for="entity in curEntities" ref="isevinst" :entity="entity" :world="curWorld" :ehash="entity?.hash" :eid="entity.name"
-                        @destruct="() => destructEntity(entity, world)"></isev>
+                    <isev v-for="entity in curEntities" ref="isevinst" :entity="entity" :world="curWorld" :wid="curWorld.id" :eid="entity.id"
+                     @newEntity="(arg1,arg2) => newEntity(arg1,arg2)"   @destruct="() => destructEntity(entity, world)"></isev>
                 </n-collapse>
             </section>
         </div>
-</section>
-    
+    </n-card>
 </template>
-<style >
+<style>
 .worldarea {
     display: block;
-    padding-left: 20px;
-    border-radius: 20px;
-    margin: 20px;
+    margin-bottom: 30px;
+    ;
     backdrop-filter: brightness(150%);
     box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
 }

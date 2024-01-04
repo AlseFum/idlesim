@@ -1,80 +1,121 @@
-import { World, Entity, Prop } from './types.js'
-import uh from './uniquehex.js'
-const uhgene = uh();
+import { World, Entity } from './types.js'
+import { unique } from './util.js';
 
-export const dw = new World();
-dw.id="duskworld"
-dw.title = "Duskworld"
-Object.assign(dw,{
-    bloodamount:0,
-    meatamount:0,
-    boneamount:0,
-    soulamount:0,
-    photos:0
-})
-dw.description=function(){
-    return `Pool:B${this.bloodamount} M${this.meatamount} B${this.boneamount} S${this.soulamount}
+export const dw = new World({
+    bloodamount: 0,
+    meatamount: 0,
+    boneamount: 0,
+    soulamount: 0,
+    photos: 0,
+    id: "duskworld",
+    label: "Duskworld"
+});
+
+
+dw.description = function () {
+    return `
+    Pool:B${this.bloodamount} M${this.meatamount} B${this.boneamount} S${this.soulamount}
     Photos:${this.photos}`;
 }
-dw.flexible = ["distance", new Prop({
-    name: "ddd", render(n) {
-        return "[]" + JSON.stringify(n) + "[]"
-    }
-})]
-dw.tick=function(){
-    
-}
-// flatworld.stable = ["STR", "HP"]
-const mindless=new Entity();
-mindless.name="mindless";
-mindless.distance=0;
-const Mode={go:0,idle:1,attack:2,hang:3}
-mindless.mode=0;
-mindless.target=4;
-mindless.tick=function(wc,we){
-    if(this.mode==Mode.go){
-        we.log("moving "+this.distance+"->"+this.target)
-        if(this.distance<this.target)this.distance++;
-        if(this.distance==this.target){we.log("arrived "+this.target);this.mode=Mode.idle;}
-        if(this.distance>this.target)this.distance--;
-    }
-    if(this.mode==Mode.idle&&Math.random()>0.5){
-        wc.boneamount++;
-        if(Math.random()>0.7){
-            this.hasPhoto=true;
-            this.target=0;
-            this.mode=Mode.go;
-            we.log("["+this.distance+"]"+"找到了一张旧照片")
-        }
-    }
-    if(this.target==0&&this.hasPhoto==true&&this.distance==0){
-        we.log("上交了。")
-        this.hasPhoto=false;
-        wc.photos++;
-        this.target=Math.floor(Math.random()*10);
-        this.mode=Mode.go;
-    }
-}
-export const reader=new Entity()
-reader.name="reader"
-reader.process=0;
-reader.distance=0;
-reader.tick=function(wc,we){
-    if(this.process!==0){
-        this.process++;
-        we.log("阅读中")
-        if(this.process===0){
-            wc.soulamount++;
-            we.log("读完了。获得了一颗灵魂")
-        }
-    }else if(this.process===0){
-        if(wc.photos>0){
-            wc.photos--;
-            this.process-=Math.floor(Math.random()*6);
-            we.log("开始阅读")
-        }
-    }
+export const worldTemplates = [dw]
+export const entityTemplates = []
 
+class stage {
+    static Encounter = 1;
+    static Combat = 2;
+    static Support = 3;
+    constructor(stages) {
+        this.type = [stage.Encounter, stage.Combat, stage.Support][Math.floor(Math.random() * 3)]
+    }
+    type;
+    nextfloor = false;
 }
-export const entityTemplates=[new Entity(),mindless,reader]
-export const worldTemplates=[dw]
+class Floor {
+    stages = 0
+    next() {
+        let ret = new stage(this.stages);
+        ret.stages = this.stages;
+        return ret;
+    }
+}
+const ceobe = new Entity({
+    id: "Ceobe",
+    title: "Ceobe",
+    label: "Ceobe",
+    name: "Ceobe",
+    floor: null,
+    stage: null,
+
+    hope: 0,
+    ingot: 0,
+    life: 0,
+    maxdeploy: 0,
+
+    squad: {
+        get power() { return 18; },
+    },
+    tags:["long"],
+    views:{sexexperience:"zero"},
+    status() {
+        return ["hope:" + this.hope, "ingot:" + this.ingot, "life:" + this.life]
+    },
+    tick(we, wc) {
+        we.newEntity("救兵")
+        if (this.failed) {
+            we.log("驻足于此")
+        }
+        else if (this.stage === null) {
+            if (this.floor === null) {
+                this.floor = new Floor();
+                this.life = 18;
+                we.log("开局18life")
+            }
+            this.stage = this.floor?.next?.();
+        } else if (this?.stage?.finished) {
+            this.stage = this.floor?.next?.();
+            we.log("下一stage咯")
+            this.tags.push("hahaha")
+        } else if (this.nextfloor) {
+            this.floor = new Floor();
+            this.stage = this.floor?.next?.();
+            we.log("下一层喽")
+        } else {
+            switch (this.stage.type) {
+                case stage.Encounter:
+                    {
+                        this.stage.finished = true;
+                        break;
+                    }
+                case stage.Combat:
+                    {
+                        this.stage.finished = true;
+                        this.life--;
+                        
+                        break;
+                    }
+                case stage.Support:
+                    {
+                        this.stage.finished = true;
+                        
+                        break;
+                        
+                    }
+            }
+
+
+            if (this.life <= 0) {
+                this.failed = true;
+                
+            }
+        }
+        //开局
+        //进入stage，打完
+        //如果有打完结算，结算
+        //或者事件，随机选择
+        //或者进入下一个场景
+        //stage就是简单的obstacle与power的对比
+        //都是动态结算
+
+    }
+})
+entityTemplates.unshift(ceobe)
